@@ -1,0 +1,200 @@
+{
+  "name": "BSAgent - Fase 1A - Calendar Query Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-range",
+              "name": "range",
+              "value": "today",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-set-input",
+      "name": "Entrada de prueba",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [460, 300],
+      "notes": "Cambiar 'range' a 'today', 'tomorrow' o 'week' para probar cada caso"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calcula startDateTime y endDateTime en zona horaria Europe/Madrid\n// según el rango recibido: today | tomorrow | week\n\nconst { DateTime } = require('luxon');\nconst tz = 'Europe/Madrid';\nconst ahora = DateTime.now().setZone(tz);\nconst rango = $input.first().json.range;\n\nlet startDateTime, endDateTime, humanRangeLabel;\n\nif (rango === 'today') {\n  startDateTime = ahora.startOf('day');\n  endDateTime   = ahora.endOf('day');\n  humanRangeLabel = 'hoy';\n\n} else if (rango === 'tomorrow') {\n  const manana = ahora.plus({ days: 1 });\n  startDateTime = manana.startOf('day');\n  endDateTime   = manana.endOf('day');\n  humanRangeLabel = 'mañana';\n\n} else if (rango === 'week') {\n  // Lunes 00:00 → domingo 23:59:59 de la semana en curso\n  // Luxon usa lunes como inicio de semana ISO (semana estándar europea)\n  startDateTime = ahora.startOf('week');\n  endDateTime   = ahora.endOf('week');\n  humanRangeLabel = 'esta semana';\n\n} else {\n  throw new Error(`Rango no válido: \"${rango}\". Valores aceptados: today | tomorrow | week`);\n}\n\nreturn [{\n  json: {\n    range: rango,\n    startDateTime: startDateTime.toISO(),\n    endDateTime:   endDateTime.toISO(),\n    timezone: tz,\n    humanRangeLabel\n  }\n}];"
+      },
+      "id": "node-calc-dates",
+      "name": "Calcular rango de fechas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $vars.PRIMARY_CALENDAR_ID }}",
+          "mode": "id"
+        },
+        "timeMin": "={{ $json.startDateTime }}",
+        "timeMax": "={{ $json.endDateTime }}",
+        "limit": 20,
+        "options": {
+          "timeZone": "Europe/Madrid",
+          "orderBy": "startTime",
+          "singleEvents": true
+        }
+      },
+      "id": "node-gcal-list",
+      "name": "Consultar Google Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL"
+        }
+      },
+      "notes": "Asignar credencial real antes de ejecutar. Credencial: GOOGLE_CALENDAR_CREDENTIAL"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convierte los eventos de Google Calendar en texto legible\n// Formato: 'Tienes N eventos hoy:\\n\\n• HH:MM–HH:MM Título'\n\nconst { DateTime } = require('luxon');\nconst tz = 'Europe/Madrid';\n\n// Leer humanRangeLabel calculado en el nodo anterior\nconst humanRangeLabel = $('Calcular rango de fechas').first().json.humanRangeLabel;\n\n// Filtrar solo ítems con id (eventos reales, no ítems vacíos de n8n)\nconst eventos = $input.all().filter(item => item.json && item.json.id);\n\nif (eventos.length === 0) {\n  return [{ json: { text: `No tienes nada en la agenda de ${humanRangeLabel}.` } }];\n}\n\nconst lineas = eventos.map(item => {\n  const ev = item.json;\n  const titulo = ev.summary || '(sin título)';\n\n  // Evento de todo el día: tiene start.date pero no start.dateTime\n  if (ev.start?.date && !ev.start?.dateTime) {\n    return `• Todo el día — ${titulo}`;\n  }\n\n  const inicio = DateTime.fromISO(ev.start.dateTime).setZone(tz).toFormat('HH:mm');\n  const fin    = DateTime.fromISO(ev.end.dateTime).setZone(tz).toFormat('HH:mm');\n  return `• ${inicio}–${fin} ${titulo}`;\n});\n\nconst n = eventos.length;\nconst cabecera = `Tienes ${n} evento${n !== 1 ? 's' : ''} ${humanRangeLabel}:`;\nconst texto = `${cabecera}\\n\\n${lineas.join('\\n')}`;\n\nreturn [{ json: { text: texto } }];"
+      },
+      "id": "node-format-response",
+      "name": "Formatear respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-text-output",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-output",
+      "name": "Output final",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [1340, 300],
+      "notes": "Punto de integración: en WF-01/WF-02 este campo 'text' será el cuerpo del mensaje de WhatsApp"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Entrada de prueba",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrada de prueba": {
+      "main": [
+        [
+          {
+            "node": "Calcular rango de fechas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular rango de fechas": {
+      "main": [
+        [
+          {
+            "node": "Consultar Google Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Google Calendar": {
+      "main": [
+        [
+          {
+            "node": "Formatear respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear respuesta": {
+      "main": [
+        [
+          {
+            "node": "Output final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid"
+  },
+  "tags": [
+    { "name": "bsagent" },
+    { "name": "fase-1a" },
+    { "name": "validacion" }
+  ],
+  "_meta": {
+    "template": true,
+    "version": "1.0.0",
+    "fase": "1A",
+    "workflow_id": "WF-00",
+    "created": "2026-05-25",
+    "description": "Workflow de validación de consulta Google Calendar. Solo lectura. No crea ni modifica eventos.",
+    "warning": "Template sin credenciales reales. Asignar GOOGLE_CALENDAR_CREDENTIAL antes de ejecutar. Ver docs/google-calendar-setup.md",
+    "variables_required": [
+      "PRIMARY_CALENDAR_ID — ID del calendario objetivo (n8n Settings → Variables)"
+    ],
+    "credentials_required": [
+      "GOOGLE_CALENDAR_CREDENTIAL — Google Calendar OAuth2Api (n8n Credentials)"
+    ],
+    "reference_docs": [
+      "N8N_WORKFLOWS.md#wf-00",
+      "docs/google-calendar-setup.md#prueba-fase-1a",
+      "CALENDAR_RULES.md"
+    ],
+    "safe": true,
+    "writes_to_calendar": false,
+    "writes_to_datastore": false
+  }
+}

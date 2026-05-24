@@ -24,13 +24,41 @@ Estado: **COMPLETADA** — 2026-05-25
 
 ---
 
-## Fase 1 — Consulta de agenda
+## Fase 1A — Calendar Query Test (validación n8n → Google Calendar)
+
+Estado: **EN CURSO** — 2026-05-25
+
+Prerequisitos:
+
+- Credencial `GOOGLE_CALENDAR_CREDENTIAL` configurada en n8n (Google Calendar OAuth2)
+- Variable `PRIMARY_CALENDAR_ID` configurada en n8n (Settings → Variables)
+- n8n funcionando (no requiere URL pública todavía)
+
+Tareas:
+
+- [ ] Revisar credencial Google Calendar OAuth2 en n8n
+- [ ] Configurar variable `PRIMARY_CALENDAR_ID` en n8n
+- [ ] Importar workflow WF-00 desde `workflows/bsagent-calendar-query-test.template.json`
+- [ ] Asignar credencial real al nodo "Consultar Google Calendar"
+- [ ] Probar `range = today` — verificar respuesta legible
+- [ ] Probar `range = tomorrow` — verificar respuesta legible
+- [ ] Probar `range = week` — verificar que abarca lunes–domingo de la semana actual
+- [ ] Verificar que la zona horaria de los eventos devueltos es Europe/Madrid
+- [ ] Verificar que no se ha creado ni modificado ningún evento
+- [ ] Documentar resultado de cada prueba
+- [ ] No conectar WhatsApp todavía
+- [ ] No añadir IA todavía
+
+---
+
+## Fase 1 — Consulta de agenda (integración completa)
 
 Estado: **PENDIENTE**
 
 Prerequisitos:
+
+- Fase 1A completada y validada
 - WhatsApp Business Cloud API configurada
-- Credencial Google Calendar OAuth2 en n8n
 - n8n accesible con webhook HTTPS público
 
 Tareas:
@@ -40,8 +68,7 @@ Tareas:
 - [ ] Implementar deduplicación por `message_id` usando Data Store
 - [ ] Implementar llamada al clasificador de intención (IA)
 - [ ] Implementar clasificación `QUERY_EVENTS`
-- [ ] Implementar consulta a Google Calendar (hoy, mañana, semana)
-- [ ] Implementar formateo de respuesta de agenda
+- [ ] Reutilizar bloque de consulta validado en Fase 1A
 - [ ] Implementar envío de respuesta por WhatsApp
 - [ ] Implementar log básico de interacción (WF-03)
 - [ ] Probar consulta con número de test de WhatsApp

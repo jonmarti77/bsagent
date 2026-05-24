@@ -2,13 +2,193 @@
 
 ## Visión general
 
-BSAgent se implementa con tres workflows en n8n. Cada uno tiene una responsabilidad única y bien delimitada.
+BSAgent se implementa con tres workflows de producción y un workflow de validación previo.
 
-| ID | Nombre | Responsabilidad |
+| ID | Nombre | Responsabilidad | Estado |
+| --- | --- | --- | --- |
+| WF-00 | bsagent-calendar-query-test | Validación n8n → Google Calendar (solo lectura) | Fase 1A |
+| WF-01 | bsagent-whatsapp-router | Entrada, deduplicación, contexto, enrutamiento | Fase 1 |
+| WF-02 | bsagent-calendar-actions | Consulta y creación de eventos en Google Calendar | Fase 1 |
+| WF-03 | bsagent-logs | Registro de interacciones | Fase 1 |
+
+---
+
+## WF-00 — bsagent-calendar-query-test
+
+### Objetivo
+
+Workflow temporal de validación. Verifica que n8n puede consultar Google Calendar correctamente antes de conectar WhatsApp o IA.
+
+**No escribe en Calendar. Solo lectura.**
+
+Una vez validado, el bloque de consulta (nodos 3–5) se reutiliza directamente en WF-02.
+
+### Tipo
+
+Temporal / prueba. Puede archivarse o eliminarse tras validar Fase 1A.
+
+### Diseño de nodos
+
+```
+1. Manual Trigger
+   Permite lanzar el workflow manualmente desde n8n.
+
+2. Set — Entrada de prueba
+   Define el rango a consultar.
+   Campo: range = "today" | "tomorrow" | "week"
+   Cambiar este valor para probar cada caso.
+
+3. Code — Calcular rango de fechas
+   Calcula startDateTime y endDateTime en Europe/Madrid.
+   Devuelve también humanRangeLabel para el mensaje de respuesta.
+
+4. Google Calendar — Consultar eventos
+   Lista los eventos del calendario en el rango calculado.
+   Credencial: GOOGLE_CALENDAR_CREDENTIAL
+   Calendario: PRIMARY_CALENDAR_ID (variable n8n)
+   Máximo: 20 eventos
+
+5. Code — Formatear respuesta
+   Convierte los eventos en texto legible.
+   Ejemplo con eventos:
+     "Tienes 2 eventos hoy:\n\n• 09:00–10:00 Reunión X\n• 15:30–16:00 [KOBO] Revisar Resend"
+   Ejemplo sin eventos:
+     "No tienes nada en la agenda de hoy."
+
+6. Set — Output final
+   Expone el campo "text" con la respuesta formateada.
+   Punto de integración: en WF-01 este campo será el cuerpo del mensaje de WhatsApp.
+```
+
+### Decisión técnica: definición de "week"
+
+`week` = lunes 00:00:00 hasta domingo 23:59:59 de la semana en curso (Europe/Madrid).
+
+**Motivo:** Cuando se pregunta "qué tengo esta semana", la respuesta útil es la vista completa
+de la semana, incluyendo eventos pasados del lunes o martes. Ayuda a Jon a ver el contexto
+semanal completo, no solo los eventos futuros. Definición fija según `CALENDAR_RULES.md`.
+
+Si la semana ya ha empezado (ej: hoy es miércoles), el rango incluirá también lunes y martes.
+
+### Código del nodo 3 — Calcular rango de fechas
+
+```javascript
+const { DateTime } = require('luxon');
+const tz = 'Europe/Madrid';
+const now = DateTime.now().setZone(tz);
+const range = $input.first().json.range;
+
+let startDateTime, endDateTime, humanRangeLabel;
+
+if (range === 'today') {
+  startDateTime = now.startOf('day');
+  endDateTime = now.endOf('day');
+  humanRangeLabel = 'hoy';
+} else if (range === 'tomorrow') {
+  const mañana = now.plus({ days: 1 });
+  startDateTime = mañana.startOf('day');
+  endDateTime = mañana.endOf('day');
+  humanRangeLabel = 'mañana';
+} else if (range === 'week') {
+  // Lunes–domingo de la semana en curso (ISO week, Luxon usa lunes como inicio)
+  startDateTime = now.startOf('week');
+  endDateTime = now.endOf('week');
+  humanRangeLabel = 'esta semana';
+} else {
+  throw new Error(`Rango no válido: ${range}. Usar: today | tomorrow | week`);
+}
+
+return [{
+  json: {
+    range,
+    startDateTime: startDateTime.toISO(),
+    endDateTime: endDateTime.toISO(),
+    timezone: tz,
+    humanRangeLabel
+  }
+}];
+```
+
+### Código del nodo 5 — Formatear respuesta
+
+```javascript
+const { DateTime } = require('luxon');
+const tz = 'Europe/Madrid';
+
+// Leer todos los ítems devueltos por Google Calendar
+const items = $input.all();
+
+// Leer humanRangeLabel del nodo anterior
+const humanRangeLabel = $('Calcular rango de fechas').first().json.humanRangeLabel;
+
+// Google Calendar devuelve array vacío si no hay eventos
+// En n8n, si el nodo no devuelve ítems, items puede estar vacío o tener un solo ítem sin "id"
+const eventos = items.filter(item => item.json && item.json.id);
+
+if (eventos.length === 0) {
+  return [{ json: { text: `No tienes nada en la agenda de ${humanRangeLabel}.` } }];
+}
+
+const lineas = eventos.map(item => {
+  const ev = item.json;
+  const titulo = ev.summary || '(sin título)';
+
+  // Evento de todo el día: start.date presente, start.dateTime ausente
+  if (ev.start?.date && !ev.start?.dateTime) {
+    return `• Todo el día — ${titulo}`;
+  }
+
+  const inicio = DateTime.fromISO(ev.start.dateTime).setZone(tz).toFormat('HH:mm');
+  const fin    = DateTime.fromISO(ev.end.dateTime).setZone(tz).toFormat('HH:mm');
+  return `• ${inicio}–${fin} ${titulo}`;
+});
+
+const n = eventos.length;
+const cabecera = `Tienes ${n} evento${n !== 1 ? 's' : ''} ${humanRangeLabel}:`;
+const texto = `${cabecera}\n\n${lineas.join('\n')}`;
+
+return [{ json: { text: texto } }];
+```
+
+### Configuración requerida en n8n
+
+| Elemento | Tipo | Valor |
 |---|---|---|
-| WF-01 | bsagent-whatsapp-router | Entrada, deduplicación, contexto, enrutamiento |
-| WF-02 | bsagent-calendar-actions | Consulta y creación de eventos en Google Calendar |
-| WF-03 | bsagent-logs | Registro de interacciones |
+| `GOOGLE_CALENDAR_CREDENTIAL` | Credencial OAuth2 | Configurar en n8n Credentials |
+| `PRIMARY_CALENDAR_ID` | Variable n8n | ID del calendario objetivo |
+
+Para configurar la variable: n8n → Settings → Variables → New Variable.
+
+### Entrada
+
+```json
+{ "range": "today" }
+```
+
+Cambiar `"today"` por `"tomorrow"` o `"week"` para los otros rangos.
+
+### Salida esperada
+
+```json
+{
+  "text": "Tienes 2 eventos hoy:\n\n• 09:00–10:00 Reunión de equipo\n• 15:30–16:00 [KOBO] Revisar Resend"
+}
+```
+
+### Límites
+
+- Solo lectura. No crea, modifica ni elimina eventos.
+- No tiene WhatsApp. La salida queda en el panel de ejecución de n8n.
+- No tiene IA ni clasificador de intención.
+- Máximo 20 eventos por consulta.
+- No persiste nada en Data Stores.
+
+### Reutilización en WF-02
+
+Los nodos 3, 4 y 5 de este workflow se copian directamente en WF-02 como bloque QUERY_EVENTS.
+La entrada (`range`, `startDateTime`, `endDateTime`) vendrá del clasificador de intención en lugar del nodo Set manual.
+
+---
 
 ---
 
