@@ -1,0 +1,56 @@
+# Variables de entorno y secretos
+.env
+.env.local
+.env.production
+.env.*
+
+# Credenciales
+credentials.json
+secrets.json
+*.key
+*.pem
+*.p12
+*.pfx
+service-account.json
+token.json
+
+# Exports de n8n con credenciales
+*-credentials-export.json
+*-with-credentials.json
+n8n-export-*.json
+
+# Carpetas de credenciales
+credentials/
+secrets/
+certs/
+
+# Dumps sensibles
+*.sql.gz
+*.dump
+
+# Dependencias
+node_modules/
+.npm/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.iml
+
+# n8n local
+.n8n/

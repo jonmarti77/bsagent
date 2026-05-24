@@ -1,0 +1,142 @@
+{
+  "_meta": {
+    "template": true,
+    "version": "1.0.0",
+    "project": "BSAgent",
+    "created": "2026-05-25",
+    "description": "Template de workflow BSAgent MVP 1 — sin credenciales reales",
+    "warning": "Este archivo es un template documentado. No contiene credenciales. Seguir docs/whatsapp-setup.md y docs/google-calendar-setup.md antes de implementar.",
+    "workflows": ["WF-01", "WF-02", "WF-03"],
+    "reference_docs": [
+      "N8N_WORKFLOWS.md",
+      "OPERATIONS.md",
+      "INTENTS.md",
+      "docs/datastore-model.md"
+    ]
+  },
+  "credentials_required": {
+    "WHATSAPP_CLOUD_API_CREDENTIAL": {
+      "type": "httpHeaderAuth",
+      "description": "Token de acceso permanente de WhatsApp Business Cloud API",
+      "used_in": ["WF-01: Send WhatsApp Response", "WF-01: WhatsApp Trigger verification"],
+      "setup_guide": "docs/whatsapp-setup.md"
+    },
+    "GOOGLE_CALENDAR_CREDENTIAL": {
+      "type": "googleCalendarOAuth2Api",
+      "description": "OAuth2 de Google Calendar con scopes calendar.readonly y calendar.events",
+      "used_in": ["WF-02: List Events", "WF-02: Create Event"],
+      "setup_guide": "docs/google-calendar-setup.md"
+    },
+    "OPENAI_OR_ANTHROPIC_CREDENTIAL": {
+      "type": "openAiApi | anthropicApi",
+      "description": "Clave de API del clasificador de intención (OpenAI o Anthropic)",
+      "used_in": ["WF-01: Classify Intent"],
+      "note": "Elegir uno según el modelo preferido. Ver prompts/system-calendar-agent.md"
+    }
+  },
+  "configuration_variables": {
+    "CALENDAR_ID": {
+      "description": "ID del calendario de Google Calendar objetivo",
+      "example": "jon@gmail.com",
+      "note": "Ver docs/google-calendar-setup.md para obtener el ID"
+    },
+    "WHATSAPP_PHONE_NUMBER_ID": {
+      "description": "ID del número de teléfono de WhatsApp Business (no el número en sí)",
+      "note": "Disponible en Meta for Developers → App → WhatsApp → Phone Numbers"
+    },
+    "WHATSAPP_VERIFY_TOKEN": {
+      "description": "Token de verificación del webhook, definido por Jon",
+      "note": "Cadena aleatoria segura. Guardar en n8n Credentials o variables de entorno"
+    },
+    "PENDING_ACTION_TTL_MINUTES": {
+      "description": "Tiempo de vida de una acción pendiente en minutos",
+      "default": "10"
+    },
+    "TIMEZONE": {
+      "description": "Zona horaria para todas las operaciones",
+      "value": "Europe/Madrid"
+    }
+  },
+  "data_stores": {
+    "N8N_DATA_STORE": {
+      "description": "Referencia al Data Store configurado en n8n",
+      "stores": [
+        {
+          "name": "processed_messages",
+          "key_pattern": "processed_{message_id}",
+          "purpose": "Deduplicación de mensajes entrantes"
+        },
+        {
+          "name": "pending_actions",
+          "key_pattern": "pending_action_{phone_number}",
+          "purpose": "Acciones pendientes de confirmación"
+        },
+        {
+          "name": "logs",
+          "key_pattern": "log_{timestamp}_{uuid}",
+          "purpose": "Trazabilidad de interacciones"
+        },
+        {
+          "name": "project_prefixes",
+          "key_pattern": "project_prefixes",
+          "purpose": "Configuración de prefijos de proyecto"
+        }
+      ],
+      "setup_guide": "docs/datastore-model.md"
+    }
+  },
+  "workflows_summary": {
+    "WF-01": {
+      "name": "bsagent-whatsapp-router",
+      "trigger": "WhatsApp webhook (POST)",
+      "responsibility": "Recepción, deduplicación, clasificación de intención y enrutamiento",
+      "nodes": [
+        "WhatsApp Trigger",
+        "Normalize Message",
+        "Check Duplicate (KV read)",
+        "Save Processed Message (KV write)",
+        "Get Pending Action (KV read)",
+        "Classify Intent (LLM)",
+        "Route by Intent (Switch)",
+        "Handle QUERY_EVENTS",
+        "Handle CREATE_EVENT",
+        "Handle CONFIRM",
+        "Handle CANCEL",
+        "Handle AMBIGUOUS",
+        "Send WhatsApp Response (HTTP)",
+        "Trigger WF-03 Logs"
+      ]
+    },
+    "WF-02": {
+      "name": "bsagent-calendar-actions",
+      "trigger": "Called from WF-01",
+      "responsibility": "Operaciones sobre Google Calendar y gestión de pending_actions",
+      "nodes": [
+        "List Events (Google Calendar)",
+        "Format Events Response",
+        "Save Pending Action (KV write)",
+        "Get Pending Action (KV read)",
+        "Validate Pending Action",
+        "Set Status Executing (KV write)",
+        "Create Event (Google Calendar)",
+        "Set Status Executed (KV write)",
+        "Save Result Event ID",
+        "Handle Calendar Error"
+      ]
+    },
+    "WF-03": {
+      "name": "bsagent-logs",
+      "trigger": "Called from WF-01",
+      "responsibility": "Registro de interacciones en Data Store",
+      "nodes": [
+        "Receive Log Data",
+        "Generate Log Key",
+        "Write Log (KV write)"
+      ]
+    }
+  },
+  "system_prompt_ref": "prompts/system-calendar-agent.md",
+  "intent_classifier_ref": "prompts/intent-classifier.md",
+  "operations_ref": "OPERATIONS.md",
+  "intents_ref": "INTENTS.md"
+}
