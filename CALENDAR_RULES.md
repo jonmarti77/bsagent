@@ -7,6 +7,38 @@
 - Todos los datetimes almacenados en Data Stores incluyen offset explícito.
 - La API de Google Calendar recibe el timezone explícito en cada petición.
 
+## Calendar policy
+
+BSAgent usa una política simple de dos calendarios:
+
+### Personal
+
+- Uso: agenda diaria principal.
+- Lectura: sí.
+- Escritura futura `CREATE_EVENT`: sí, siempre con confirmación.
+- Aparece por defecto en consultas de agenda.
+- Es el calendario objetivo de `QUERY_EVENTS` en MVP 1A/MVP 1.
+
+### Gastos
+
+- Uso: cargos y gastos mensuales aproximados.
+- Lectura: sí, solo cuando el usuario pregunte explícitamente por gastos, cargos o pagos.
+- Escritura: no en MVP 1.
+- No aparece por defecto en consultas como "agenda hoy", "agenda mañana" o "agenda semana".
+- Puede aparecer en consultas específicas como:
+  - "qué gastos tengo esta semana"
+  - "qué cargos tengo este mes"
+  - "qué pagos entran mañana"
+
+### Reglas de selección de calendario
+
+- `QUERY_EVENTS` usa por defecto el calendario Personal.
+- `QUERY_EXPENSE_EVENTS` o equivalente futuro usará el calendario Gastos.
+- `CREATE_EVENT` usará el calendario Personal.
+- Nunca crear eventos en Gastos en MVP 1.
+- Si el usuario pide "agenda", no incluir Gastos.
+- Si el usuario pide "gastos", "cargos" o "pagos", consultar Gastos.
+
 ## Duración por defecto
 
 - Si el usuario no especifica duración: **30 minutos**.

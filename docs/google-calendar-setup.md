@@ -52,6 +52,32 @@ No solicitar permisos adicionales (acceso a otros calendarios, gestión de usuar
 - Todas las peticiones a la API incluyen `timeZone: "Europe/Madrid"` explícitamente
 - n8n también debe tener configurada la zona horaria `Europe/Madrid` (Settings → General → Timezone)
 
+## Calendarios usados por BSAgent
+
+### Personal
+
+- Calendario operativo principal.
+- Se usa para las pruebas actuales de WF-00.
+- Se usa por defecto para consultas de agenda (`QUERY_EVENTS`).
+- Puede tener pocos eventos; una respuesta vacía no implica error.
+- Será el destino de `CREATE_EVENT` cuando esa capacidad se active, siempre con confirmación.
+
+### Gastos
+
+- Calendario secundario.
+- Útil para consultas futuras de cargos mensuales aproximados.
+- No entra en WF-00 por defecto.
+- No debe mezclarse con la agenda Personal salvo que el usuario pregunte explícitamente por gastos, cargos o pagos.
+- No se debe escribir en este calendario en MVP 1.
+
+### Nota de validación
+
+Si Personal no tiene eventos hoy, no es error. Para validar API real se puede:
+
+- Probar `range = week`.
+- Crear manualmente un evento temporal en Personal y borrarlo después.
+- Revisar que el nodo Google Calendar no usa pin data.
+
 ## Verificar el acceso
 
 Antes de construir el flujo completo de creación, validar el acceso con una consulta:

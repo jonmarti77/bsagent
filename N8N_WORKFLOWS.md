@@ -200,10 +200,14 @@ Cambiar `"today"` por `"tomorrow"` o `"week"` para los otros rangos.
 ### Límites
 
 - Solo lectura. No crea, modifica ni elimina eventos.
+- Valida únicamente el calendario Personal mediante `PRIMARY_CALENDAR_ID`.
 - No tiene WhatsApp. La salida queda en el panel de ejecución de n8n.
 - No tiene IA ni clasificador de intención.
 - Máximo 20 eventos por consulta.
 - No persiste nada en Data Stores.
+
+El futuro workflow de gastos deberá ser separado o parametrizado con
+`calendar_scope = expenses`, y consultar solo el calendario Gastos en modo lectura.
 
 ### Reutilización en WF-02
 

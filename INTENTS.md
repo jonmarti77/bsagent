@@ -157,3 +157,50 @@ El mensaje no puede clasificarse con suficiente certeza.
 | DELETE_EVENT | Excluido | Riesgo alto de pérdida de datos; requiere confirmación doble |
 
 Estas intenciones se añadirán en fases posteriores cuando el sistema base sea estable.
+
+---
+
+## Intenciones futuras documentadas
+
+### QUERY_EXPENSE_EVENTS
+
+Estado: **future / not implemented in MVP 1A**.
+
+El usuario quiere consultar cargos, gastos o pagos anotados en el calendario secundario
+`Gastos`.
+
+**Reglas futuras previstas:**
+- No está activa en MVP 1A.
+- No debe romper ni ampliar el contrato activo del MVP 1A.
+- Solo se implementará después de validar Calendar básico con `QUERY_EVENTS`.
+- Usará `calendar_scope: "expenses"`.
+- Consultará el calendario Gastos en solo lectura.
+- No mezclará resultados con la agenda Personal por defecto.
+- No creará eventos en Gastos.
+
+**Ejemplo futuro de activación:**
+
+Input:
+```text
+Qué gastos tengo esta semana
+```
+
+Output futuro:
+```json
+{
+  "intent": "QUERY_EXPENSE_EVENTS",
+  "confidence": 0.92,
+  "params": {
+    "range": "week",
+    "calendar_scope": "expenses",
+    "timezone": "Europe/Madrid"
+  },
+  "missing_fields": [],
+  "needs_confirmation": false,
+  "ambiguous": false,
+  "clarification_question": null
+}
+```
+
+En MVP 1A solo está activo `QUERY_EVENTS` para el calendario Personal.
+`QUERY_EXPENSE_EVENTS` se implementará después de validar Calendar básico.

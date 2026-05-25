@@ -66,7 +66,22 @@ Usuario (WhatsApp)
   - Listar eventos (read)
   - Crear evento (write, solo tras confirmación)
 - Zona horaria: Europe/Madrid
-- Un calendario objetivo configurado en n8n
+- Calendario principal de agenda configurado en n8n: Personal
+- Calendario secundario de gastos, solo lectura futura: Gastos
+
+### Política multi-calendario simple
+
+BSAgent soportará una política multi-calendario mínima, sin diseñar todavía una
+capa multi-calendario compleja ni una capa financiera.
+
+| Calendario | Rol | Uso |
+|---|---|---|
+| Personal | Primary agenda calendar | Agenda diaria, consultas por defecto y futuras creaciones con confirmación |
+| Gastos | Secondary read-only expenses calendar | Consultas explícitas de gastos, cargos o pagos |
+
+`QUERY_EVENTS` consulta Personal por defecto. Una intención futura como
+`QUERY_EXPENSE_EVENTS` consultará Gastos cuando el usuario pregunte explícitamente
+por gastos/cargos/pagos. `CREATE_EVENT` escribirá solo en Personal durante MVP 1.
 
 ### n8n Data Store
 

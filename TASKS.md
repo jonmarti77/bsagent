@@ -145,6 +145,24 @@ No tiene fecha asignada. Se priorizan cuando el MVP 1-3 esté estable.
 
 ---
 
+## Fase futura — Expenses Calendar Query
+
+Estado: **PENDIENTE**
+
+Objetivo: consultar el calendario Gastos en solo lectura cuando el usuario pregunte
+explícitamente por gastos, cargos o pagos.
+
+Checklist:
+
+- [ ] Definir intención `QUERY_EXPENSE_EVENTS`
+- [ ] Decidir rango soportado: `tomorrow`, `week`, `month`
+- [ ] Consultar calendario Gastos en solo lectura
+- [ ] Formatear cargos por fecha
+- [ ] No mezclar con agenda Personal por defecto
+- [ ] No crear eventos en Gastos
+
+---
+
 ## Módulos futuros — documentados, no implementados
 
 Ver diseño completo en [FUTURE_MODULES.md](FUTURE_MODULES.md).

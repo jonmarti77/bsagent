@@ -6,6 +6,14 @@ BSAgent nunca crea, modifica ni elimina nada en Google Calendar sin confirmació
 
 Esta regla no tiene excepciones en MVP 1.
 
+## Reglas operativas de calendarios
+
+- Si el usuario pregunta por agenda, usar el calendario Personal.
+- Si el usuario pregunta por gastos, cargos o pagos, usar el calendario Gastos.
+- Si el usuario pide crear un evento sin indicar calendario, usar Personal.
+- No escribir nunca en Gastos durante MVP 1.
+- Si hay ambigüedad entre evento de agenda y gasto, preguntar antes de consultar o preparar cualquier acción.
+
 ## Flujo de un mensaje entrante
 
 ### Paso 1 — Recepción y deduplicación
