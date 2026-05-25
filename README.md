@@ -37,9 +37,24 @@ Lo que NO hace en MVP 1:
 
 **BSAgent puede escribir en Google Calendar, pero nunca crea, modifica ni borra nada sin confirmación explícita del usuario.**
 
+## Diseño modular
+
+BSAgent está diseñado como sistema modular. El Calendar MVP es la base operativa.
+Cada módulo futuro añade capacidades sin romper los anteriores.
+
+| Módulo | Estado |
+| --- | --- |
+| Calendar (MVP actual) | En construcción — Fase 1A |
+| Shopping List | Documentado — no implementado |
+| Wishlist | Documentado — no implementado |
+| Car Maintenance | Documentado — no implementado |
+| Training & Nutrition | Documentado — no implementado |
+
+Ver [FUTURE_MODULES.md](FUTURE_MODULES.md) para el diseño de los módulos futuros.
+
 ## Estado actual
 
-> Fase 0 — Documentación base completada. Pendiente: construcción de workflows en n8n.
+> Fase 1A — Validación n8n → Google Calendar. Template WF-00 listo para importar en n8n.
 
 ## Estructura del proyecto
 
@@ -47,6 +62,7 @@ Lo que NO hace en MVP 1:
 BSAgent/
 ├── AGENTS.md              Reglas operativas para agentes IA
 ├── ARCHITECTURE.md        Arquitectura general y decisiones técnicas
+├── FUTURE_MODULES.md      Módulos futuros documentados (no implementados)
 ├── OPERATIONS.md          Comportamiento operativo, reglas, estados
 ├── TASKS.md               Backlog por fases
 ├── INTENTS.md             Intenciones permitidas en MVP 1
@@ -55,8 +71,9 @@ BSAgent/
 ├── README.md              Este archivo
 ├── .gitignore             Protege credenciales y archivos sensibles
 ├── workflows/
-│   ├── README.md          Instrucciones de importación
-│   └── bsagent-calendar-mvp.template.json   Template sin credenciales
+│   ├── README.md                              Instrucciones de importación
+│   ├── bsagent-calendar-mvp.template.json     Template MVP completo (sin credenciales)
+│   └── bsagent-calendar-query-test.template.json   Template Fase 1A — solo consulta
 ├── prompts/
 │   ├── system-calendar-agent.md   System prompt del agente
 │   └── intent-classifier.md      Prompt de clasificación de intención
@@ -77,7 +94,7 @@ pero es responsabilidad del operador no exportar workflows con credenciales real
 ## Tecnologías
 
 | Capa | Tecnología |
-|---|---|
+| --- | --- |
 | Canal de entrada | WhatsApp Business Cloud API (Meta) |
 | Automatización | n8n |
 | Clasificación de intención | Claude (Anthropic) u OpenAI |

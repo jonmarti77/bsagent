@@ -126,7 +126,7 @@ Tareas:
 
 ---
 
-## Fase futura
+## Fase futura — Calendar (extensiones)
 
 No tiene fecha asignada. Se priorizan cuando el MVP 1-3 esté estable.
 
@@ -140,3 +140,52 @@ No tiene fecha asignada. Se priorizan cuando el MVP 1-3 esté estable.
 - [ ] Notificaciones proactivas (recordatorios)
 - [ ] Lectura de correos
 - [ ] Integración con otras herramientas (Notion, Linear, etc.)
+
+---
+
+## Módulos futuros — documentados, no implementados
+
+Ver diseño completo en [FUTURE_MODULES.md](FUTURE_MODULES.md).
+
+### Shopping List Module
+
+Prioridad: **Alta** (después de Calendar MVP estabilizado)
+
+- [ ] Diseñar intenciones: ADD_SHOPPING_ITEMS, QUERY_SHOPPING_LIST, MARK_ITEM_BOUGHT, CLEAR_SHOPPING_LIST
+- [ ] Definir modelo de datos `shopping_items`
+- [ ] Decidir persistencia: Data Store → Supabase
+- [ ] Construir workflow n8n del módulo
+- [ ] Integrar con WF-01 (clasificador de intención multimodulo)
+- [ ] Probar desde WhatsApp
+
+### Wishlist Module
+
+Prioridad: **Media** (después de Shopping List)
+
+- [ ] Diseñar intenciones: ADD_WISHLIST_ITEM, QUERY_WISHLIST, UPDATE_WISHLIST_ITEM, DISCARD_WISHLIST_ITEM
+- [ ] Definir modelo de datos `wishlist_items` con categorías y estados
+- [ ] Decidir persistencia: Data Store → Supabase
+- [ ] Construir workflow n8n del módulo
+- [ ] Integrar con WF-01
+
+### Car Maintenance Module
+
+Prioridad: **Media-alta** (historial del coche se pierde con el tiempo)
+
+- [ ] Definir modelo de datos relacional: `vehicles` + `vehicle_events`
+- [ ] Diseñar intenciones: LOG_CAR_EVENT, QUERY_CAR_HISTORY, QUERY_NEXT_MAINTENANCE, QUERY_CAR_COSTS
+- [ ] Crear tablas en Supabase (persistencia desde el inicio)
+- [ ] Revisar y documentar límites de seguridad del módulo
+- [ ] Construir workflow n8n del módulo
+- [ ] Integrar con WF-01
+
+### Training & Nutrition Module
+
+Prioridad: **Media** (puede subir cuando Calendar MVP esté estable)
+
+- [ ] Migrar y consolidar datos históricos desde ChatGPT proyecto Salud
+- [ ] Definir modelo de datos: sessions, exercises, sets, body_weight_logs, nutrition_logs
+- [ ] Crear tablas en Supabase
+- [ ] Diseñar intenciones: LOG_TRAINING_SESSION, LOG_BODY_WEIGHT, LOG_NUTRITION, QUERY_TRAINING_PROGRESS, QUERY_WEEKLY_SUMMARY
+- [ ] Construir workflow n8n del módulo
+- [ ] Integrar con WF-01
