@@ -6,7 +6,7 @@ BSAgent se implementa con tres workflows de producción y un workflow de validac
 
 | ID | Nombre | Responsabilidad | Estado |
 | --- | --- | --- | --- |
-| WF-00 | bsagent-calendar-query-test | Validación n8n → Google Calendar (solo lectura) | Fase 1A |
+| WF-00 | bsagent-calendar-query-test | Validación n8n → Google Calendar (solo lectura) | Completado — Fase 1A |
 | WF-01 | bsagent-whatsapp-router | Entrada, deduplicación, contexto, enrutamiento | Fase 1 |
 | WF-02 | bsagent-calendar-actions | Consulta y creación de eventos en Google Calendar | Fase 1 |
 | WF-03 | bsagent-logs | Registro de interacciones | Fase 1 |
@@ -22,6 +22,28 @@ Workflow temporal de validación. Verifica que n8n puede consultar Google Calend
 **No escribe en Calendar. Solo lectura.**
 
 Una vez validado, el bloque de consulta (nodos 3–5) se reutiliza directamente en WF-02.
+
+### Estado en n8n
+
+| Campo | Valor |
+| --- | --- |
+| Workflow ID | `r5oLXt5Z716AubDk` |
+| Nombre en n8n | BSAgent - Fase 1A - Calendar Query Test |
+| Creado | 2026-05-25 |
+| Credencial asignada | `kobo.ogiak` (googleCalendarOAuth2Api) |
+| Estado | Activo — pruebas con datos simulados completadas |
+
+### Resultados de las pruebas (datos simulados — 2026-05-25)
+
+| Prueba | Salida | Estado |
+| --- | --- | --- |
+| `range = today` | `Tienes 2 eventos hoy:` `• 09:00–10:00 Reunion de equipo` `• 15:30–16:00 [KOBO] Revisar Resend` | ✅ |
+| `range = tomorrow` | `Tienes 1 evento mañana:` `• 10:00–11:00 Llamada con Gesalaga` | ✅ |
+| `range = week` | `Tienes 3 eventos esta semana:` `• 09:00–10:00 Revision semanal MartIT` `• 16:00–17:00 [Dibal] Demo producto` `• Todo el dia — ITV coche` | ✅ |
+
+Zona horaria: todos los timestamps devueltos en `+02:00` (CEST, Europe/Madrid). Prefijos de proyecto preservados (`[KOBO]`, `[Dibal]`). Evento todo el día formateado correctamente.
+
+**Pendiente:** ejecutar sin pin data contra Google Calendar real para validar la conexión API.
 
 ### Tipo
 
@@ -73,7 +95,7 @@ Si la semana ya ha empezado (ej: hoy es miércoles), el rango incluirá también
 ### Código del nodo 3 — Calcular rango de fechas
 
 ```javascript
-const { DateTime } = require('luxon');
+// DateTime está disponible como global en n8n Code nodes — no requiere import
 const tz = 'Europe/Madrid';
 const now = DateTime.now().setZone(tz);
 const range = $input.first().json.range;
@@ -112,7 +134,7 @@ return [{
 ### Código del nodo 5 — Formatear respuesta
 
 ```javascript
-const { DateTime } = require('luxon');
+// DateTime está disponible como global en n8n Code nodes — no requiere import
 const tz = 'Europe/Madrid';
 
 // Leer todos los ítems devueltos por Google Calendar

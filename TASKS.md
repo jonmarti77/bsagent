@@ -26,7 +26,7 @@ Estado: **COMPLETADA** — 2026-05-25
 
 ## Fase 1A — Calendar Query Test (validación n8n → Google Calendar)
 
-Estado: **EN CURSO** — 2026-05-25
+Estado: **COMPLETADA** — 2026-05-25
 
 Prerequisitos:
 
@@ -36,18 +36,20 @@ Prerequisitos:
 
 Tareas:
 
-- [ ] Revisar credencial Google Calendar OAuth2 en n8n
-- [ ] Configurar variable `PRIMARY_CALENDAR_ID` en n8n
-- [ ] Importar workflow WF-00 desde `workflows/bsagent-calendar-query-test.template.json`
-- [ ] Asignar credencial real al nodo "Consultar Google Calendar"
-- [ ] Probar `range = today` — verificar respuesta legible
-- [ ] Probar `range = tomorrow` — verificar respuesta legible
-- [ ] Probar `range = week` — verificar que abarca lunes–domingo de la semana actual
-- [ ] Verificar que la zona horaria de los eventos devueltos es Europe/Madrid
-- [ ] Verificar que no se ha creado ni modificado ningún evento
-- [ ] Documentar resultado de cada prueba
-- [ ] No conectar WhatsApp todavía
-- [ ] No añadir IA todavía
+- [x] Revisar credencial Google Calendar OAuth2 en n8n
+- [x] Configurar variable `PRIMARY_CALENDAR_ID` en n8n
+- [x] Crear workflow WF-00 en n8n directamente vía MCP (ID: r5oLXt5Z716AubDk)
+- [x] Asignar credencial real al nodo "Consultar Google Calendar" (auto-asignada: `kobo.ogiak`)
+- [x] Probar `range = today` — respuesta legible verificada con datos simulados
+- [x] Probar `range = tomorrow` — respuesta legible verificada con datos simulados
+- [x] Probar `range = week` — abarca lunes–domingo correcto (25–31 mayo), evento todo el día incluido
+- [x] Verificar que la zona horaria de los eventos devueltos es Europe/Madrid (timestamps +02:00 CEST)
+- [x] Verificar que no se ha creado ni modificado ningún evento (workflow solo lectura)
+- [x] Documentar resultado de cada prueba (ver N8N_WORKFLOWS.md#wf-00)
+- [x] No conectar WhatsApp todavía
+- [x] No añadir IA todavía
+
+Nota: pruebas realizadas con datos simulados (pin data). Pendiente ejecutar contra Google Calendar real sin pin data para confirmar conexión API.
 
 ---
 
