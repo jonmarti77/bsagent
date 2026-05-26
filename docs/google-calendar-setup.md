@@ -72,11 +72,22 @@ No solicitar permisos adicionales (acceso a otros calendarios, gestión de usuar
 
 ### Nota de validación
 
-Si Personal no tiene eventos hoy, no es error. Para validar API real se puede:
+Las pruebas con pin data no validan la conexión real. La validación real requiere:
 
-- Probar `range = week`.
-- Crear manualmente un evento temporal en Personal y borrarlo después.
-- Revisar que el nodo Google Calendar no usa pin data.
+- Credencial asignada y autorizada en n8n.
+- Pin data desactivado — confirmar que `pinData: {}` en la ejecución.
+- Ejecución contra API (el nodo Calendar mostrará un tiempo de ejecución > 100 ms; pin data es instantáneo).
+
+Personal puede devolver 0 eventos sin que sea error. Si today y tomorrow están vacíos, usar `range = week` para forzar un rango más amplio. Si todos los rangos devuelven vacío, la validación sigue siendo válida si la API responde sin errores.
+
+Para validación manual fuerte: crear un evento temporal en Personal, ejecutar el workflow con `range = today`, verificar que aparece en la respuesta, y borrar el evento después.
+
+**Validación completada el 2026-05-26** contra Google Calendar API real:
+
+- today: 0 eventos — API respondió correctamente en 341 ms ✅
+- tomorrow: 0 eventos — API respondió correctamente en 176 ms ✅
+- week: 1 evento real devuelto ("Lorea - Cumpleaños", todo el día, 31/05) en 177 ms ✅
+- No se creó, modificó ni eliminó ningún evento ✅
 
 ## Verificar el acceso
 

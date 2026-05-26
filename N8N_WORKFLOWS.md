@@ -6,7 +6,7 @@ BSAgent se implementa con tres workflows de producción y un workflow de validac
 
 | ID | Nombre | Responsabilidad | Estado |
 | --- | --- | --- | --- |
-| WF-00 | bsagent-calendar-query-test | Validación n8n → Google Calendar (solo lectura) | Completado — Fase 1A |
+| WF-00 | bsagent-calendar-query-test | Validación n8n → Google Calendar (solo lectura) | Validado contra API real — 2026-05-26 |
 | WF-01 | bsagent-whatsapp-router | Entrada, deduplicación, contexto, enrutamiento | Fase 1 |
 | WF-02 | bsagent-calendar-actions | Consulta y creación de eventos en Google Calendar | Fase 1 |
 | WF-03 | bsagent-logs | Registro de interacciones | Fase 1 |
@@ -30,20 +30,22 @@ Una vez validado, el bloque de consulta (nodos 3–5) se reutiliza directamente 
 | Workflow ID | `r5oLXt5Z716AubDk` |
 | Nombre en n8n | BSAgent - Fase 1A - Calendar Query Test |
 | Creado | 2026-05-25 |
-| Credencial asignada | `kobo.ogiak` (googleCalendarOAuth2Api) |
-| Estado | Activo — pruebas con datos simulados completadas |
+| Credencial asignada | `jonmarti77 calendar` (googleCalendarOAuth2Api) |
+| Pin data | No — `pinData: {}` confirmado en todas las ejecuciones |
+| Always Output Data | Sí — activo en nodo "Consultar Google Calendar" |
+| Estado | Validado contra API real — 2026-05-26 |
 
-### Resultados de las pruebas (datos simulados — 2026-05-25)
+### Resultados de las pruebas — API real (2026-05-26)
 
-| Prueba | Salida | Estado |
-| --- | --- | --- |
-| `range = today` | `Tienes 2 eventos hoy:` `• 09:00–10:00 Reunion de equipo` `• 15:30–16:00 [KOBO] Revisar Resend` | ✅ |
-| `range = tomorrow` | `Tienes 1 evento mañana:` `• 10:00–11:00 Llamada con Gesalaga` | ✅ |
-| `range = week` | `Tienes 3 eventos esta semana:` `• 09:00–10:00 Revision semanal MartIT` `• 16:00–17:00 [Dibal] Demo producto` `• Todo el dia — ITV coche` | ✅ |
+Calendario: Personal (`jonmarti77@gmail.com`). Sin pin data. Credencial: `jonmarti77 calendar`.
 
-Zona horaria: todos los timestamps devueltos en `+02:00` (CEST, Europe/Madrid). Prefijos de proyecto preservados (`[KOBO]`, `[Dibal]`). Evento todo el día formateado correctamente.
+| Prueba | Rango consultado | Eventos | Texto generado | Exec. Calendar | Estado |
+| --- | --- | --- | --- | --- | --- |
+| `range = today` | 2026-05-26 00:00 → 23:59 +02:00 | 0 | `No tienes nada en la agenda de hoy.` | 341 ms | ✅ API real |
+| `range = tomorrow` | 2026-05-27 00:00 → 23:59 +02:00 | 0 | `No tienes nada en la agenda de mañana.` | 176 ms | ✅ API real |
+| `range = week` | 2026-05-25 (lun) → 2026-05-31 (dom) +02:00 | 1 | `Tienes 1 evento esta semana:` `• Todo el dia — Lorea - Cumpleaños` | 177 ms | ✅ API real |
 
-**Pendiente:** ejecutar sin pin data contra Google Calendar real para validar la conexión API.
+Zona horaria: todos los rangos en `+02:00` (CEST, Europe/Madrid). Evento de todo el día formateado correctamente. No se creó, modificó ni eliminó ningún evento en Google Calendar.
 
 ### Tipo
 

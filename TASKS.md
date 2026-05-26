@@ -26,7 +26,7 @@ Estado: **COMPLETADA** — 2026-05-25
 
 ## Fase 1A — Calendar Query Test (validación n8n → Google Calendar)
 
-Estado: **COMPLETADA** — 2026-05-25
+Estado: **VALIDADA CONTRA API REAL** — 2026-05-26
 
 Prerequisitos:
 
@@ -39,17 +39,27 @@ Tareas:
 - [x] Revisar credencial Google Calendar OAuth2 en n8n
 - [x] Configurar variable `PRIMARY_CALENDAR_ID` en n8n
 - [x] Crear workflow WF-00 en n8n directamente vía MCP (ID: r5oLXt5Z716AubDk)
-- [x] Asignar credencial real al nodo "Consultar Google Calendar" (auto-asignada: `kobo.ogiak`)
-- [x] Probar `range = today` — respuesta legible verificada con datos simulados
-- [x] Probar `range = tomorrow` — respuesta legible verificada con datos simulados
-- [x] Probar `range = week` — abarca lunes–domingo correcto (25–31 mayo), evento todo el día incluido
+- [x] Asignar credencial real al nodo "Consultar Google Calendar" (credencial: `jonmarti77 calendar`)
+- [x] Confirmar que no hay pin data en el workflow (pinData: {} en todas las ejecuciones)
+- [x] Confirmar que Always Output Data está activo en el nodo Google Calendar
+- [x] Probar `range = today` contra API real — 0 eventos, respuesta legible (ejecución #7, 341ms)
+- [x] Probar `range = tomorrow` contra API real — 0 eventos, respuesta legible (ejecución #8, 176ms)
+- [x] Probar `range = week` contra API real — 1 evento real devuelto: "Lorea - Cumpleaños" todo el día 31/05 (ejecución #9, 177ms)
 - [x] Verificar que la zona horaria de los eventos devueltos es Europe/Madrid (timestamps +02:00 CEST)
 - [x] Verificar que no se ha creado ni modificado ningún evento (workflow solo lectura)
 - [x] Documentar resultado de cada prueba (ver N8N_WORKFLOWS.md#wf-00)
 - [x] No conectar WhatsApp todavía
 - [x] No añadir IA todavía
 
-Nota: pruebas realizadas con datos simulados (pin data). Pendiente ejecutar contra Google Calendar real sin pin data para confirmar conexión API.
+Validación real completada el 2026-05-26:
+
+- Calendario consultado: Personal (`jonmarti77@gmail.com`)
+- Credencial usada: jonmarti77 calendar (googleCalendarOAuth2Api)
+- Pin data: no usado en ninguna prueba
+- today: sin eventos — respuesta "No tienes nada en la agenda de hoy." ✅
+- tomorrow: sin eventos — respuesta "No tienes nada en la agenda de mañana." ✅
+- week: 1 evento real — "Tienes 1 evento esta semana: • Todo el dia — Lorea - Cumpleaños" ✅
+- No se creó, modificó ni eliminó ningún evento en Google Calendar ✅
 
 ---
 
