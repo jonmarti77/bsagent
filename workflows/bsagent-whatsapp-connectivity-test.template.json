@@ -1,0 +1,151 @@
+{
+  "name": "BSAgent - Fase 1B - WhatsApp Connectivity Test",
+  "description": "Fase 1B: valida canal WhatsApp → n8n → respuesta. Recibe mensajes, normaliza payload, responde con eco. Sin IA ni Calendar. Paso previo a WF-01 de producción.",
+  "nodes": [
+    {
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [0, 96],
+      "parameters": {
+        "updates": ["messages"],
+        "options": {}
+      },
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "name": "WHATSAPP_TRIGGER_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "name": "Normalizar mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 96],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Extraer el payload del webhook de WhatsApp\nconst payload = $input.first().json;\n\n// Ignorar actualizaciones de estado (delivered, read, etc.)\nconst mensajes = payload?.entry?.[0]?.changes?.[0]?.value?.messages;\nif (!mensajes || mensajes.length === 0) {\n  return []; // Detiene la ejecucion para status updates\n}\n\nconst msg = mensajes[0];\nconst phone_number = String(msg.from || '');\nconst message_id = String(msg.id || '');\nconst timestamp = String(msg.timestamp || '');\nconst is_text = msg.type === 'text';\nconst message_text = is_text ? String(msg.text?.body || '') : '';\n\n// Nota: deduplicacion por message_id se anadira cuando el Data Store KV este disponible\nreturn [{\n  json: {\n    phone_number,\n    message_id,\n    message_text,\n    timestamp,\n    is_text,\n    source: 'whatsapp'\n  }\n}];"
+      }
+    },
+    {
+      "name": "¿Es texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [448, 96],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_text }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Enviar respuesta texto",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [672, 0],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $vars.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $json.phone_number }}",
+        "messageType": "text",
+        "textBody": "={{ \"BSAgent ha recibido tu mensaje: \" + $json.message_text }}"
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "name": "WHATSAPP_API_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "name": "Enviar respuesta no texto",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [672, 192],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $vars.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $json.phone_number }}",
+        "messageType": "text",
+        "textBody": "BSAgent ha recibido un mensaje, pero esta fase solo procesa texto."
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "name": "WHATSAPP_API_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "name": "Log básico",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [896, 96],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "l1", "name": "phone_number", "value": "={{ $('Normalizar mensaje').first().json.phone_number }}", "type": "string" },
+            { "id": "l2", "name": "message_id", "value": "={{ $('Normalizar mensaje').first().json.message_id }}", "type": "string" },
+            { "id": "l3", "name": "message_text", "value": "={{ $('Normalizar mensaje').first().json.message_text }}", "type": "string" },
+            { "id": "l4", "name": "result", "value": "RESPONDED", "type": "string" },
+            { "id": "l5", "name": "created_at", "value": "={{ new Date().toISOString() }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [[{ "node": "Normalizar mensaje", "type": "main", "index": 0 }]]
+    },
+    "Normalizar mensaje": {
+      "main": [[{ "node": "¿Es texto?", "type": "main", "index": 0 }]]
+    },
+    "¿Es texto?": {
+      "main": [
+        [{ "node": "Enviar respuesta texto", "type": "main", "index": 0 }],
+        [{ "node": "Enviar respuesta no texto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enviar respuesta texto": {
+      "main": [[{ "node": "Log básico", "type": "main", "index": 0 }]]
+    },
+    "Enviar respuesta no texto": {
+      "main": [[{ "node": "Log básico", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateNotes": [
+      "INSTRUCCIONES DE IMPORTACIÓN:",
+      "1. Crear credencial 'WHATSAPP_TRIGGER_CREDENTIAL' en n8n (tipo: WhatsApp Trigger API)",
+      "2. Crear credencial 'WHATSAPP_API_CREDENTIAL' en n8n (tipo: WhatsApp Business Cloud)",
+      "3. Crear variable 'WHATSAPP_PHONE_NUMBER_ID' en n8n Settings → Variables",
+      "4. Importar este template en n8n",
+      "5. Asignar las credenciales a los nodos correspondientes",
+      "6. Activar el workflow",
+      "7. Registrar el webhook en Meta Developer console → WhatsApp → Configuration",
+      "",
+      "IMPORTANTE: Este template no contiene tokens, secretos ni IDs reales.",
+      "No conectar Google Calendar ni IA en este workflow.",
+      "Ver docs/whatsapp-setup.md para instrucciones completas."
+    ]
+  }
+}

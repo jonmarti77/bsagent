@@ -7,6 +7,7 @@ BSAgent se implementa con tres workflows de producción y un workflow de validac
 | ID | Nombre | Responsabilidad | Estado |
 | --- | --- | --- | --- |
 | WF-00 | bsagent-calendar-query-test | Validación n8n → Google Calendar (solo lectura) | Validado contra API real — 2026-05-26 |
+| WF-1B | bsagent-whatsapp-connectivity-test | Validación canal WhatsApp → n8n → respuesta | En progreso — 2026-05-26 |
 | WF-01 | bsagent-whatsapp-router | Entrada, deduplicación, contexto, enrutamiento | Fase 1 |
 | WF-02 | bsagent-calendar-actions | Consulta y creación de eventos en Google Calendar | Fase 1 |
 | WF-03 | bsagent-logs | Registro de interacciones | Fase 1 |
@@ -215,6 +216,138 @@ El futuro workflow de gastos deberá ser separado o parametrizado con
 
 Los nodos 3, 4 y 5 de este workflow se copian directamente en WF-02 como bloque QUERY_EVENTS.
 La entrada (`range`, `startDateTime`, `endDateTime`) vendrá del clasificador de intención en lugar del nodo Set manual.
+
+---
+
+## WF-1B — bsagent-whatsapp-connectivity-test
+
+### Objetivo
+
+Workflow temporal de validación del canal WhatsApp. Verifica que n8n puede recibir mensajes
+de WhatsApp y responder correctamente antes de conectar Google Calendar o el clasificador IA.
+
+**No escribe en Calendar. No llama a IA. Solo valida el canal.**
+
+Una vez validado, la lógica de normalización y envío de este workflow se reutiliza en WF-01.
+
+### Estado en n8n
+
+| Campo | Valor |
+| --- | --- |
+| Workflow ID | `yHKEeuNRZoOo8L5A` |
+| Nombre en n8n | BSAgent - Fase 1B - WhatsApp Connectivity Test |
+| Creado | 2026-05-26 |
+| Credencial trigger | `WhatsApp OAuth account - Chatbot GPT` (whatsAppTriggerApi, auto-asignada) |
+| Credencial envío | Pendiente — necesita crear `whatsAppApi` en n8n Credentials |
+| Variable requerida | `WHATSAPP_PHONE_NUMBER_ID` en n8n Settings → Variables |
+| Estado | Creado — pendiente activar y configurar credencial de envío |
+
+### Bloqueadores para validación real
+
+- Falta credencial de envío (`whatsAppApi`) con token permanente de Meta
+- Falta variable `WHATSAPP_PHONE_NUMBER_ID` en n8n Settings → Variables
+- Falta activar el workflow en n8n (toggle Active)
+- Falta registrar URL del webhook en Meta Developer console → WhatsApp → Configuration
+- Deduplicación por `message_id` pendiente hasta tener Data Store KV disponible
+
+### Diseño de nodos
+
+```
+1. WhatsApp Trigger
+   Recibe eventos de WhatsApp (mensajes y status updates).
+   Suscripción: updates = ["messages"]
+   Credential: whatsAppTriggerApi
+
+2. Code — Normalizar mensaje
+   Filtra status updates (devuelve [] si no hay campo messages → workflow se detiene).
+   Extrae del payload:
+     phone_number, message_id, message_text, timestamp, is_text
+   Nota: deduplicación por message_id pendiente (Data Store KV no disponible).
+
+3. IF — ¿Es texto?
+   Condición: is_text === true
+   True → Enviar respuesta texto
+   False → Enviar respuesta no texto
+
+4a. WhatsApp — Enviar respuesta texto
+    "BSAgent ha recibido tu mensaje: {message_text}"
+    Credential: whatsAppApi
+    phoneNumberId: $vars.WHATSAPP_PHONE_NUMBER_ID
+
+4b. WhatsApp — Enviar respuesta no texto
+    "BSAgent ha recibido un mensaje, pero esta fase solo procesa texto."
+    Credential: whatsAppApi
+    phoneNumberId: $vars.WHATSAPP_PHONE_NUMBER_ID
+
+5. Set — Log básico
+   Registra: phone_number, message_id, message_text, result=RESPONDED, created_at
+```
+
+### Entrada esperada (webhook Meta)
+
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [{
+    "changes": [{
+      "value": {
+        "messages": [{
+          "id": "wamid.xxx",
+          "from": "34600000000",
+          "timestamp": "1234567890",
+          "type": "text",
+          "text": { "body": "hola" }
+        }]
+      }
+    }]
+  }]
+}
+```
+
+### Salida esperada (Log básico)
+
+```json
+{
+  "phone_number": "34600000000",
+  "message_id": "wamid.xxx",
+  "message_text": "hola",
+  "result": "RESPONDED",
+  "created_at": "2026-05-26T19:34:00.000Z"
+}
+```
+
+### Mensaje de respuesta en WhatsApp
+
+Con texto: `BSAgent ha recibido tu mensaje: hola`
+
+Sin texto (imagen, audio, etc.): `BSAgent ha recibido un mensaje, pero esta fase solo procesa texto.`
+
+### Credenciales requeridas
+
+| Tipo | Nombre sugerido | Dónde crear |
+| --- | --- | --- |
+| whatsAppTriggerApi | WHATSAPP_TRIGGER_CREDENTIAL | n8n Credentials → WhatsApp Trigger API |
+| whatsAppApi | WHATSAPP_API_CREDENTIAL | n8n Credentials → WhatsApp Business Cloud |
+
+La credencial `whatsAppTriggerApi` fue auto-asignada (`WhatsApp OAuth account - Chatbot GPT`).
+La credencial `whatsAppApi` para envío aún debe crearse con el token permanente de Meta.
+
+### Variable de entorno requerida
+
+| Variable | Dónde | Valor |
+| --- | --- | --- |
+| `WHATSAPP_PHONE_NUMBER_ID` | n8n Settings → Variables | phone_number_id de Meta (no es el número de teléfono) |
+
+### Límites
+
+- Solo lectura de mensajes entrantes. No crea, modifica ni elimina eventos en Calendar.
+- No llama a ningún clasificador de intención.
+- No usa Data Store en esta fase (deduplicación pendiente).
+- La salida queda en el panel de ejecución de n8n y como respuesta directa al usuario de WhatsApp.
+
+### Tipo
+
+Temporal / prueba. Puede archivarse tras validar Fase 1B.
 
 ---
 

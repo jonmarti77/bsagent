@@ -63,13 +63,57 @@ Validación real completada el 2026-05-26:
 
 ---
 
+## Fase 1B — WhatsApp Connectivity Test (validación canal)
+
+Estado: **EN PROGRESO** — 2026-05-26
+
+Prerequisitos:
+
+- Fase 1A completada y validada ✅
+- n8n cloud accesible con HTTPS público (martibs.app.n8n.cloud) ✅
+- App de Meta con WhatsApp configurada en Meta for Developers
+- Credencial de envío WhatsApp (`whatsAppApi`) creada en n8n
+
+Tareas:
+
+- [x] Revisar nodos WhatsApp disponibles en n8n (nativos: whatsAppTrigger + whatsApp send)
+- [x] Crear workflow WF-1B en n8n (ID: yHKEeuNRZoOo8L5A)
+- [x] Nodo trigger auto-asignado con credencial existente: `WhatsApp OAuth account - Chatbot GPT`
+- [x] Diseñar normalización de mensaje entrante (phone_number, message_id, message_text, timestamp)
+- [x] Diseñar filtro de status updates (solo procesar mensajes entrantes, ignorar delivered/read)
+- [x] Diseñar bifurcación texto / no texto
+- [x] Diseñar respuesta de eco: "BSAgent ha recibido tu mensaje: {text}"
+- [x] Diseñar log básico
+- [x] Crear template de workflow (sin credenciales)
+- [x] Documentar Fase 1B en TASKS.md, N8N_WORKFLOWS.md y docs/whatsapp-setup.md
+- [ ] Crear credencial de envío WhatsApp (`whatsAppApi`) en n8n con token permanente de Meta
+- [ ] Configurar variable `WHATSAPP_PHONE_NUMBER_ID` en n8n Settings → Variables
+- [ ] Activar workflow WF-1B en n8n
+- [ ] Registrar URL webhook en Meta Developer console → WhatsApp → Configuration
+- [ ] Verificar webhook desde Meta (GET con hub.challenge)
+- [ ] Enviar mensaje real desde WhatsApp y comprobar respuesta
+- [ ] Confirmar que no se llama a Google Calendar
+- [ ] Confirmar que no se llama a IA
+- [ ] Confirmar deduplicación (pendiente Data Store KV)
+
+Bloqueadores actuales:
+
+- Falta credencial `whatsAppApi` (envío) — necesita token permanente de Meta en n8n Credentials
+- Falta variable `WHATSAPP_PHONE_NUMBER_ID` en n8n Settings → Variables
+- Falta activar el workflow en n8n
+- Falta registrar webhook en Meta Developer console
+- Deduplicación por `message_id` pendiente hasta tener Data Store KV disponible
+
+---
+
 ## Fase 1 — Consulta de agenda (integración completa)
 
 Estado: **PENDIENTE**
 
 Prerequisitos:
 
-- Fase 1A completada y validada
+- Fase 1A completada y validada ✅
+- Fase 1B completada y validada
 - WhatsApp Business Cloud API configurada
 - n8n accesible con webhook HTTPS público
 

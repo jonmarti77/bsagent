@@ -115,6 +115,80 @@ El `phone_number_id` es el ID del número de WhatsApp en Meta (no el número de 
 | Verificación | No requiere verificación del número | Requiere verificación |
 | Recomendación | Usar para Fase 1 y Fase 2 | Activar en Fase 3 tras validar |
 
+## Prueba Fase 1B — WhatsApp Connectivity Test
+
+Esta sección cubre la validación del canal WhatsApp usando el workflow WF-1B
+(`BSAgent - Fase 1B - WhatsApp Connectivity Test`, ID: `yHKEeuNRZoOo8L5A`).
+
+### Estado del workflow (2026-05-26)
+
+| Componente | Estado |
+| --- | --- |
+| Workflow creado en n8n | ✅ |
+| Credencial trigger (`whatsAppTriggerApi`) | ✅ Auto-asignada: `WhatsApp OAuth account - Chatbot GPT` |
+| Credencial envío (`whatsAppApi`) | ❌ Pendiente — crear en n8n Credentials |
+| Variable `WHATSAPP_PHONE_NUMBER_ID` | ❌ Pendiente — crear en n8n Settings → Variables |
+| Workflow activo | ❌ Pendiente — activar en n8n |
+| Webhook registrado en Meta | ❌ Pendiente |
+
+### Pasos para completar la configuración
+
+#### 1. Crear credencial de envío en n8n
+
+1. Ir a n8n → Credentials → New → WhatsApp Business Cloud
+2. Introducir el token de acceso permanente de Meta
+3. Nombre sugerido: `WHATSAPP_API_CREDENTIAL`
+4. Asignar a los nodos de envío en WF-1B
+
+#### 2. Configurar variable WHATSAPP_PHONE_NUMBER_ID
+
+1. Ir a n8n → Settings → Variables → New Variable
+2. Nombre: `WHATSAPP_PHONE_NUMBER_ID`
+3. Valor: el phone_number_id de Meta (visible en Meta Developers → WhatsApp → API Setup)
+4. Este ID es distinto del número de teléfono real
+
+#### 3. Activar el workflow y registrar el webhook
+
+1. Abrir WF-1B en n8n y activarlo (toggle Active)
+2. Copiar la URL del webhook desde el nodo WhatsApp Trigger
+3. Ir a Meta for Developers → App → WhatsApp → Configuration → Webhook
+4. Callback URL: URL del webhook de n8n
+5. Verify Token: el valor configurado en la credencial trigger
+6. Suscribir al campo: `messages`
+
+### Respuestas esperadas en WhatsApp
+
+| Tipo de mensaje | Respuesta |
+| --- | --- |
+| Texto: `hola` | `BSAgent ha recibido tu mensaje: hola` |
+| Imagen, audio, documento | `BSAgent ha recibido un mensaje, pero esta fase solo procesa texto.` |
+| Status update (delivered, read) | Sin respuesta (workflow se detiene en normalización) |
+
+### Deduplicación — estado actual
+
+La deduplicación por `message_id` está planificada pero pendiente:
+
+- El nodo Data Store KV (`n8n-nodes-base.kv`) no está disponible en esta instalación
+- Para la prueba inicial de conectividad esto es aceptable
+- La deduplicación se añadirá en Fase 1 (WF-01) cuando esté disponible el KV store
+
+### Errores comunes en Fase 1B
+
+| Error | Causa probable | Solución |
+| --- | --- | --- |
+| Webhook no verifica | Workflow no activo o token incorrecto | Activar workflow antes de registrar webhook en Meta |
+| 401 al enviar | Token de acceso inválido | Revisar credencial `whatsAppApi` en n8n |
+| Variable no definida | `WHATSAPP_PHONE_NUMBER_ID` no configurada | Crear variable en n8n Settings → Variables |
+| Mensajes no llegan | Campo `messages` no suscrito | Activar en Meta Developers → Webhook Fields |
+| Número no autorizado | En test: número no en lista de contactos | Añadir número en Meta Developers → WhatsApp → Test Numbers |
+
+### Confirmar solo lectura
+
+Después de las pruebas de Fase 1B, confirmar en Google Calendar que no se ha creado,
+modificado ni eliminado ningún evento. WF-1B no tiene nodos de Calendar ni de IA.
+
+---
+
 ## Errores comunes
 
 | Error | Causa probable | Solución |
